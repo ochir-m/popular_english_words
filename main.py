@@ -1,3 +1,4 @@
+import random
 import sqlite3
 import types
 import telebot
@@ -9,6 +10,13 @@ bot = telebot.TeleBot(TOKEN)
 
 conn = sqlite3.connect('database.db', check_same_thread=False)
 cursor = conn.cursor()
+
+comments_for_right_answers = ['Правильно!', 'Верно!', 'Молодец! 😉', 'Вау, это правильный ответ! 🔥',
+                              'Совершенно верно!', 'Класс, все верно!', 'Отлично! 👍', 'Все верно!',
+                              'Да, так держать! 💪']
+
+comments_for_incorrect_answers = ['Попробуй еще раз', 'Не совсем...',
+                                  'Не совсем так. Сделай еще попытку 😉']
 
 #functions for queries
 def execute_one_query(query):
@@ -83,7 +91,7 @@ def get_rus_eng_answer(message, select_words):
 def verify_rus_eng_answer(message, verify_words):
     get_words = verify_words
     if message.text.strip().lower() == get_words[0]:
-        bot.send_message(message.chat.id, 'Правильно!', parse_mode='html')
+        bot.send_message(message.chat.id, random.choice(comments_for_right_answers), parse_mode='html')
     elif message.text.strip().lower() == 'рандомное слово':
         mess(message)
     elif message.text.strip().lower() == '10 рандомных слов':
@@ -93,7 +101,7 @@ def verify_rus_eng_answer(message, verify_words):
     elif message.text.strip().lower() == 'потренироваться (eng-rus)':
         mess(message)
     else:
-        bot.send_message(message.chat.id, 'Попробуйте еще раз', parse_mode='html')
+        bot.send_message(message.chat.id, random.choice(comments_for_incorrect_answers), parse_mode='html')
         get_rus_eng_answer(message, get_words)
 
 #train eng-rus
@@ -105,7 +113,7 @@ def get_eng_rus_answer(message, select_words):
 def verify_eng_rus_answer(message, verify_words):
     get_words = verify_words
     if message.text.strip().lower() == get_words[1]:
-        bot.send_message(message.chat.id, 'Правильно!', parse_mode='html')
+        bot.send_message(message.chat.id, random.choice(comments_for_right_answers), parse_mode='html')
     elif message.text.strip().lower() == 'рандомное слово':
         mess(message)
     elif message.text.strip().lower() == '10 рандомных слов':
@@ -115,7 +123,7 @@ def verify_eng_rus_answer(message, verify_words):
     elif message.text.strip().lower() == 'потренироваться (eng-rus)':
         mess(message)
     else:
-        bot.send_message(message.chat.id, 'Попробуйте еще раз', parse_mode='html')
+        bot.send_message(message.chat.id, random.choice(comments_for_incorrect_answers), parse_mode='html')
         get_eng_rus_answer(message, get_words)
 
 bot.polling(none_stop=True)
