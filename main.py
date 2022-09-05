@@ -112,7 +112,7 @@ def get_eng_rus_answer(message, select_words):
 
 def verify_eng_rus_answer(message, verify_words):
     get_words = verify_words
-    if message.text.strip().lower() == get_words[1]:
+    if message.text.strip().lower() in get_words[1].split(sep=','):
         bot.send_message(message.chat.id, random.choice(comments_for_right_answers), parse_mode='html')
     elif message.text.strip().lower() == 'рандомное слово':
         mess(message)
