@@ -1,7 +1,8 @@
-import random
 import sqlite3
 import types
+import random
 import telebot
+from telebot import types
 
 TOKEN = None
 with open('token.txt') as f:
@@ -29,16 +30,29 @@ def execute_many_queries(query):
     result = cursor.fetchall()
     return result
 
+def show_markup(width):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=width)
+    if width == 2:
+        random_1 = types.KeyboardButton('Рандомное слово')
+        random_10 = types.KeyboardButton('10 рандомных слов')
+        train_rus = types.KeyboardButton('Потренироваться (rus-eng)')
+        train_eng = types.KeyboardButton('Потренироваться (eng-rus)')
+        markup.add(random_1, random_10, train_rus, train_eng)
+        return markup
+    elif width == 3:
+        correct_answer = types.KeyboardButton('Показать правильный ответ')
+        random_1 = types.KeyboardButton('Рандомное слово')
+        random_10 = types.KeyboardButton('10 рандомных слов')
+        train_rus = types.KeyboardButton('Потренироваться (rus-eng)')
+        train_eng = types.KeyboardButton('Потренироваться (eng-rus)')
+        markup.row(correct_answer).add(random_1, random_10).add(train_rus, train_eng)
+        return markup
+
 #start
 @bot.message_handler(commands=['start'])
 def start(message):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    random = types.KeyboardButton('Рандомное слово')
-    random_10 = types.KeyboardButton('10 рандомных слов')
-    train_rus = types.KeyboardButton('Потренироваться (rus-eng)')
-    train_eng = types.KeyboardButton('Потренироваться (eng-rus)')
 
-    markup.add(random, random_10, train_rus, train_eng)
+    markup = show_markup(2)
 
     mess = f'Привет! 2 000 английских слов покрывают примерно 80-90% устной речи. Это означает, что запомнив всего ' \
            f'2 000 слов, вы сможете с легкостью поддерживать общение на повседневные темы. ' \
@@ -56,7 +70,10 @@ def mess(message):
         select_words = "SELECT eng, rus FROM english_words ORDER BY RANDOM() LIMIT 1"
         words = execute_one_query(select_words)
         final_message = f"{words[0]} - {words[1]}"
-        bot.send_message(message.chat.id, final_message, parse_mode='html')
+
+        markup = show_markup(2)
+
+        bot.send_message(message.chat.id, final_message, parse_mode='html', reply_markup=markup)
 
     elif get_message_bot == '10 рандомных слов':
         select_words = "SELECT eng, rus FROM english_words ORDER BY RANDOM() LIMIT 10"
@@ -64,20 +81,29 @@ def mess(message):
         final_message = ""
         for word in words:
             final_message += f"{word[0]} - {word[1]} \n"
-        bot.send_message(message.chat.id, final_message, parse_mode='html')
+
+        markup = show_markup(2)
+
+        bot.send_message(message.chat.id, final_message, parse_mode='html', reply_markup=markup)
 
     elif get_message_bot == 'потренироваться (rus-eng)':
         select_words = "SELECT eng, rus FROM english_words ORDER BY RANDOM() LIMIT 1"
         words = execute_one_query(select_words)
         rus_word = f"{words[1]}"
-        msg = bot.send_message(message.chat.id, rus_word, parse_mode='html')
+
+        markup = show_markup(3)
+
+        msg = bot.send_message(message.chat.id, rus_word, parse_mode='html', reply_markup=markup)
         bot.register_next_step_handler(msg, verify_rus_eng_answer, words)
 
     elif get_message_bot == 'потренироваться (eng-rus)':
         select_words = "SELECT eng, rus FROM english_words ORDER BY RANDOM() LIMIT 1"
         words = execute_one_query(select_words)
         eng_word = f"{words[0]}"
-        msg = bot.send_message(message.chat.id, eng_word, parse_mode='html')
+
+        markup = show_markup(3)
+
+        msg = bot.send_message(message.chat.id, eng_word, parse_mode='html', reply_markup=markup)
         bot.register_next_step_handler(msg, verify_eng_rus_answer, words)
     else:
         bot.send_message(message.chat.id, 'Выбери команду из списка 👇', parse_mode='html')
@@ -85,20 +111,22 @@ def mess(message):
 #train rus-eng
 def get_rus_eng_answer(message, select_words):
     get_words = select_words
-    msg = bot.send_message(message.chat.id, get_words[1], parse_mode='html')
+    markup = show_markup(3)
+    msg = bot.send_message(message.chat.id, get_words[1], parse_mode='html', reply_markup=markup)
     bot.register_next_step_handler(msg, verify_rus_eng_answer, get_words)
 
 def verify_rus_eng_answer(message, verify_words):
     get_words = verify_words
     if message.text.strip().lower() == get_words[0]:
-        bot.send_message(message.chat.id, random.choice(comments_for_right_answers), parse_mode='html')
-    elif message.text.strip().lower() == 'рандомное слово':
-        mess(message)
-    elif message.text.strip().lower() == '10 рандомных слов':
-        mess(message)
-    elif message.text.strip().lower() == 'потренироваться (rus-eng)':
-        mess(message)
-    elif message.text.strip().lower() == 'потренироваться (eng-rus)':
+        markup = show_markup(2)
+        bot.send_message(message.chat.id, random.choice(comments_for_right_answers), parse_mode='html',
+                         reply_markup=markup)
+    elif message.text.strip().lower() == 'показать правильный ответ':
+        markup = show_markup(2)
+        bot.send_message(message.chat.id, get_words[0], parse_mode='html', reply_markup=markup)
+    elif message.text.strip().lower() in ['рандомное слово', '10 рандомных слов',
+                                          'потренироваться (rus-eng)', 'потренироваться (eng-rus)']:
+        markup = show_markup(2)
         mess(message)
     else:
         bot.send_message(message.chat.id, random.choice(comments_for_incorrect_answers), parse_mode='html')
@@ -107,20 +135,22 @@ def verify_rus_eng_answer(message, verify_words):
 #train eng-rus
 def get_eng_rus_answer(message, select_words):
     get_words = select_words
-    msg = bot.send_message(message.chat.id, get_words[0], parse_mode='html')
+    markup = show_markup(3)
+    msg = bot.send_message(message.chat.id, get_words[0], parse_mode='html', reply_markup=markup)
     bot.register_next_step_handler(msg, verify_eng_rus_answer, get_words)
 
 def verify_eng_rus_answer(message, verify_words):
     get_words = verify_words
     if message.text.strip().lower() in get_words[1].split(sep=','):
-        bot.send_message(message.chat.id, random.choice(comments_for_right_answers), parse_mode='html')
-    elif message.text.strip().lower() == 'рандомное слово':
-        mess(message)
-    elif message.text.strip().lower() == '10 рандомных слов':
-        mess(message)
-    elif message.text.strip().lower() == 'потренироваться (rus-eng)':
-        mess(message)
-    elif message.text.strip().lower() == 'потренироваться (eng-rus)':
+        markup = show_markup(2)
+        bot.send_message(message.chat.id, random.choice(comments_for_right_answers), parse_mode='html',
+                         reply_markup=markup)
+    elif message.text.strip().lower() == 'показать правильный ответ':
+        markup = show_markup(2)
+        bot.send_message(message.chat.id, get_words[1], parse_mode='html', reply_markup=markup)
+    elif message.text.strip().lower() in ['рандомное слово', '10 рандомных слов',
+                                          'потренироваться (rus-eng)', 'потренироваться (eng-rus)']:
+        markup = show_markup(2)
         mess(message)
     else:
         bot.send_message(message.chat.id, random.choice(comments_for_incorrect_answers), parse_mode='html')
