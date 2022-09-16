@@ -127,7 +127,7 @@ def get_eng_rus_answer(message, select_words):
 
 def verify_eng_rus_answer(message, verify_words):
     get_words = verify_words
-    if message.text.strip().lower() in get_words[1].split(sep=','):
+    if message.text.strip().lower() in get_words[1].split(sep=', '):
         markup = show_markup(2)
         bot.send_message(message.chat.id, random.choice(comments_for_right_answers), reply_markup=markup)
     elif message.text.strip().lower() == 'показать правильный ответ':
